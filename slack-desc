@@ -1,0 +1,11 @@
+ocrad: Ocrad (GNU's Optical Character Recognition program)
+ocrad:
+ocrad: GNU Ocrad is an OCR (Optical Character Recognition) program based on a
+ocrad: feature extraction method. It reads images in pbm (bitmap), pgm
+ocrad: (greyscale) or ppm (color) formats and produces text in byte (8-bit) or
+ocrad: UTF-8 formats. It includes a layout analyser able to separate the
+ocrad: columns or blocks of text normally found on printed pages. Ocrad can be
+ocrad: used as a stand-alone console application, or as a backend to other
+ocrad: programs such as Kooka in KDE.
+ocrad:
+ocrad: Packaged by Georgi D. Sotirov <gdsotirov@dir.bg>
