@@ -1,5 +1,20 @@
-# Build shared library and fix tests run for it
-
+# Patch for Ocrad 0.20 to enable build of shared library and fix tests run for it
+# Copyright (C) 2010 Georgi D. Sotirov <gdsotirov@dir.bg>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
 diff -N -r -U 3 ocrad-0.20-orig/Makefile.in ocrad-0.20/Makefile.in
 --- ocrad-0.20-orig/Makefile.in	2010-07-14 17:53:06.000000000 +0300
 +++ ocrad-0.20/Makefile.in	2010-08-30 13:35:59.000000000 +0300
