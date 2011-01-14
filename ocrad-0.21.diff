@@ -1,5 +1,5 @@
-# Patch for Ocrad 0.20 to enable build of shared library and fix tests run for it
-# Copyright (C) 2010 Georgi D. Sotirov <gdsotirov@dir.bg>
+# Patch for Ocrad 0.21 to enable build of shared library and fix tests run for it
+# Copyright (C) 2010-2011 Georgi D. Sotirov <gdsotirov@dir.bg>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -15,15 +15,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-diff -N -r -U 3 ocrad-0.20-orig/Makefile.in ocrad-0.20/Makefile.in
---- ocrad-0.20-orig/Makefile.in	2010-07-14 17:53:06.000000000 +0300
-+++ ocrad-0.20/Makefile.in	2010-08-30 13:35:59.000000000 +0300
+diff -urNad ocrad-0.21-new/Makefile.in ocrad-0.21/Makefile.in
+--- ocrad-0.21-new/Makefile.in	2010-12-01 01:39:37.000000000 +0200
++++ ocrad-0.21/Makefile.in	2011-01-14 10:26:44.000000000 +0200
 @@ -13,26 +13,26 @@
             bitmap.o blob.o profile.o feats.o feats_test0.o feats_test1.o \
             character.o character_r11.o character_r12.o character_r13.o \
             textline.o textline_r2.o textblock.o textpage.o
 -objs     = arg_parser.o main.o
-+prg_objs = arg_parser.o main.o
++prg_objs     = arg_parser.o main.o
  
  
  .PHONY : all install install-info install-man install-strip \
@@ -34,22 +34,22 @@ diff -N -r -U 3 ocrad-0.20-orig/Makefile.in ocrad-0.20/Makefile.in
 +all : lib$(libname).so $(progname)
  
 -lib$(libname).a: $(ocr_objs) $(lib_objs)
--	$(AR) -rcs lib$(libname).a $(ocr_objs) $(lib_objs)
+-	$(AR) -rcs $@ $(ocr_objs) $(lib_objs)
 +lib$(libname).so: $(ocr_objs) $(lib_objs)
 +	$(CXX) -shared -Wl,-soname,lib$(libname).so -o lib$(libname).so $(ocr_objs) $(lib_objs)
  
 -$(progname) : $(ocr_objs) $(objs)
--	$(CXX) $(LDFLAGS) -o $(progname) $(ocr_objs) $(objs)
+-	$(CXX) $(LDFLAGS) -o $@ $(ocr_objs) $(objs)
 +$(progname) : lib$(libname).so $(prg_objs)
 +	$(CXX) $(LDFLAGS) -o $(progname) -L. -locrad $(prg_objs)
  
 -$(progname)_profiled : $(ocr_objs) $(objs)
--	$(CXX) $(LDFLAGS) -pg -o $(progname)_profiled $(ocr_objs) $(objs)
+-	$(CXX) $(LDFLAGS) -pg -o $@ $(ocr_objs) $(objs)
 +$(progname)_profiled : lib$(libname).so $(prg_objs)
 +	$(CXX) $(LDFLAGS) -pg -o $(progname)_profiled -L. -locrad $(prg_objs)
  
 -ocrcheck : ocrcheck.o lib$(libname).a
--	$(CXX) $(LDFLAGS) -o ocrcheck ocrcheck.o lib$(libname).a
+-	$(CXX) $(LDFLAGS) -o $@ ocrcheck.o lib$(libname).a
 +ocrcheck : ocrcheck.o lib$(libname).so
 +	$(CXX) $(LDFLAGS) -o ocrcheck -L. -locrad ocrcheck.o
  
@@ -73,8 +73,8 @@ diff -N -r -U 3 ocrad-0.20-orig/Makefile.in ocrad-0.20/Makefile.in
  	./config.status
  
  check : all ocrcheck
--	@$(VPATH)/testsuite/check.sh $(VPATH)/testsuite
-+	$(VPATH)/testsuite/check.sh $(VPATH)/testsuite
+-	@$(VPATH)/testsuite/check.sh $(VPATH)/testsuite $(pkgversion)
++	$(VPATH)/testsuite/check.sh $(VPATH)/testsuite $(pkgversion)
  
  install : all install-info install-man
  	if [ ! -d "$(DESTDIR)$(bindir)" ] ; then $(INSTALL_DIR) "$(DESTDIR)$(bindir)" ; fi
@@ -96,20 +96,18 @@ diff -N -r -U 3 ocrad-0.20-orig/Makefile.in ocrad-0.20/Makefile.in
  
  uninstall-info :
  	-install-info --info-dir="$(DESTDIR)$(infodir)" --remove "$(DESTDIR)$(infodir)/$(pkgname).info"
-@@ -143,8 +143,8 @@
- 	lzip -v -9 $(DISTNAME).tar
+@@ -144,7 +144,7 @@
  
  clean :
--	-rm -f $(progname) $(progname)_profiled $(objs) $(ocr_objs)
+ 	-rm -f $(progname) $(progname)_profiled $(objs) $(ocr_objs)
 -	-rm -f ocrcheck ocrcheck.o $(lib_objs) *.a
-+	-rm -f $(progname) $(progname)_profiled $(prg_objs) $(ocr_objs)
 +	-rm -f ocrcheck ocrcheck.o $(lib_objs) *.a *.so
  
  distclean : clean
  	-rm -f Makefile config.status *.tar *.tar.lz
-diff -N -r -U 3 ocrad-0.20-orig/testsuite/check.sh ocrad-0.20/testsuite/check.sh
---- ocrad-0.20-orig/testsuite/check.sh	2010-07-15 13:45:34.000000000 +0300
-+++ ocrad-0.20/testsuite/check.sh	2010-08-30 13:38:10.000000000 +0300
+diff -urNad ocrad-0.21-new/testsuite/check.sh ocrad-0.21/testsuite/check.sh
+--- ocrad-0.21-new/testsuite/check.sh	2011-01-09 13:53:37.000000000 +0200
++++ ocrad-0.21/testsuite/check.sh	2011-01-14 10:27:17.000000000 +0200
 @@ -5,8 +5,8 @@
  # This script is free software: you have unlimited permission
  # to copy, distribute and modify it.
