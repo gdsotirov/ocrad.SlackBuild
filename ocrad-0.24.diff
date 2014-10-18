@@ -1,4 +1,4 @@
-# Patch for Ocrad 0.23 to enable build of shared library and fix tests run for it
+# Patch for Ocrad 0.24 to enable build of shared library and fix tests run for it
 # Copyright (C) 2010-2014 Georgi D. Sotirov <gdsotirov@dir.bg>
 #
 # This program is free software; you can redistribute it and/or
@@ -15,10 +15,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-diff -urNad ocrad-0.23-orig/Makefile.in ocrad-0.23/Makefile.in
---- ocrad-0.23-orig/Makefile.in	2014-01-02 15:11:43.000000000 +0200
-+++ ocrad-0.23/Makefile.in	2014-03-29 13:05:14.000000000 +0200
-@@ -13,26 +13,26 @@
+diff -urNad ocrad-0.24-orig/Makefile.in ocrad-0.24/Makefile.in
+--- ocrad-0.24-orig/Makefile.in	2014-09-15 00:42:32.000000000 +0300
++++ ocrad-0.24/Makefile.in	2014-10-18 17:51:20.000000000 +0300
+@@ -13,23 +13,23 @@
             bitmap.o blob.o profile.o feats.o feats_test0.o feats_test1.o \
             character.o character_r11.o character_r12.o character_r13.o \
             textline.o textline_r2.o textblock.o textpage.o
@@ -39,46 +39,41 @@ diff -urNad ocrad-0.23-orig/Makefile.in ocrad-0.23/Makefile.in
 +	$(CXX) -shared -Wl,-soname,lib$(libname).so -o lib$(libname).so $(ocr_objs) $(lib_objs)
  
 -$(progname) : $(ocr_objs) $(objs)
--	$(CXX) $(LDFLAGS) -o $@ $(ocr_objs) $(objs)
-+$(progname) : lib$(libname).so $(prg_objs)
-+	$(CXX) $(LDFLAGS) -o $(progname) -L. -locrad $(prg_objs)
+-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(ocr_objs) $(objs)
++$(progname) : $(prg_objs) lib$(libname).so
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ -L. -locrad $(prg_objs)
  
--$(progname)_profiled : $(ocr_objs) $(objs)
--	$(CXX) $(LDFLAGS) -pg -o $@ $(ocr_objs) $(objs)
-+$(progname)_profiled : lib$(libname).so $(prg_objs)
-+	$(CXX) $(LDFLAGS) -pg -o $(progname)_profiled -L. -locrad $(prg_objs)
+-ocradcheck : ocradcheck.o lib$(libname).a
+-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ ocradcheck.o lib$(libname).a
++ocradcheck : ocradcheck.o lib$(libname).so
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ -L. -locrad ocradcheck.o
  
--ocrcheck : ocrcheck.o lib$(libname).a
--	$(CXX) $(LDFLAGS) -o $@ ocrcheck.o lib$(libname).a
-+ocrcheck : ocrcheck.o lib$(libname).so
-+	$(CXX) $(LDFLAGS) -o ocrcheck -L. -locrad ocrcheck.o
- 
- ocrcheck.o : ocrcheck.cc
- 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -DPROGVERSION=\"$(pkgversion)\" -c -o $@ $<
-@@ -41,11 +41,11 @@
- 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -DPROGVERSION=\"$(pkgversion)\" -c -o $@ $<
+ ocradcheck.o : ocradcheck.cc
+ 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -DPROGVERSION=\"$(pkgversion)\" -c -o $@ $<
+@@ -38,11 +38,11 @@
+ 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -DPROGVERSION=\"$(pkgversion)\" -c -o $@ $<
  
  %.o : %.cc
--	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
-+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fPIC -c -o $@ $<
+-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
++	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -c -o $@ $<
  
  $(lib_objs)     : Makefile ocradlib.h
  $(ocr_objs)     : Makefile bitmap.h blob.h common.h rectangle.h ucs.h
 -$(objs)         : Makefile arg_parser.h
 +$(prg_objs)     : Makefile arg_parser.h
- character.o     : character.h
+ character.o     : segment.h character.h profile.h feats.h
  character_r11.o : segment.h character.h profile.h feats.h
  character_r12.o : segment.h character.h profile.h feats.h
-@@ -85,7 +85,7 @@
+@@ -82,7 +82,7 @@
  	./config.status
  
- check : all ocrcheck
+ check : all ocradcheck
 -	@$(VPATH)/testsuite/check.sh $(VPATH)/testsuite $(pkgversion)
 +	$(VPATH)/testsuite/check.sh $(VPATH)/testsuite $(pkgversion)
  
  install : install-bin install-info install-man
  
-@@ -95,7 +95,7 @@
+@@ -92,7 +92,7 @@
  	if [ ! -d "$(DESTDIR)$(libdir)" ] ; then $(INSTALL_DIR) "$(DESTDIR)$(libdir)" ; fi
  	$(INSTALL_PROGRAM) ./$(progname) "$(DESTDIR)$(bindir)/$(progname)"
  	$(INSTALL_DATA) $(VPATH)/$(libname)lib.h "$(DESTDIR)$(includedir)/$(libname)lib.h"
@@ -87,7 +82,7 @@ diff -urNad ocrad-0.23-orig/Makefile.in ocrad-0.23/Makefile.in
  
  install-info :
  	if [ ! -d "$(DESTDIR)$(infodir)" ] ; then $(INSTALL_DIR) "$(DESTDIR)$(infodir)" ; fi
-@@ -114,7 +114,7 @@
+@@ -111,7 +111,7 @@
  uninstall-bin :
  	-rm -f "$(DESTDIR)$(bindir)/$(progname)"
  	-rm -f "$(DESTDIR)$(includedir)/$(libname)lib.h"
@@ -96,18 +91,18 @@ diff -urNad ocrad-0.23-orig/Makefile.in ocrad-0.23/Makefile.in
  
  uninstall-info :
  	-install-info --info-dir="$(DESTDIR)$(infodir)" --remove "$(DESTDIR)$(infodir)/$(pkgname).info"
-@@ -149,7 +149,7 @@
+@@ -146,7 +146,7 @@
  
  clean :
- 	-rm -f $(progname) $(progname)_profiled $(objs)
--	-rm -f ocrcheck ocrcheck.o $(ocr_objs) $(lib_objs) *.a
-+	-rm -f ocrcheck ocrcheck.o $(lib_objs) *.a *.so
+ 	-rm -f $(progname) $(objs)
+-	-rm -f ocradcheck ocradcheck.o $(ocr_objs) $(lib_objs) *.a
++	-rm -f ocradcheck ocradcheck.o $(lib_objs) *.a *.so
  
  distclean : clean
  	-rm -f Makefile config.status *.tar *.tar.lz
-diff -urNad ocrad-0.23-orig/testsuite/check.sh ocrad-0.23/testsuite/check.sh
---- ocrad-0.23-orig/testsuite/check.sh	2014-01-22 17:58:40.000000000 +0200
-+++ ocrad-0.23/testsuite/check.sh	2014-03-29 13:05:14.000000000 +0200
+diff -urNad ocrad-0.24-orig/testsuite/check.sh ocrad-0.24/testsuite/check.sh
+--- ocrad-0.24-orig/testsuite/check.sh	2014-08-24 19:36:14.000000000 +0300
++++ ocrad-0.24/testsuite/check.sh	2014-10-18 17:46:23.000000000 +0300
 @@ -5,8 +5,8 @@
  # This script is free software: you have unlimited permission
  # to copy, distribute and modify it.
