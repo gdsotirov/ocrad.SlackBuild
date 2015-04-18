@@ -1,5 +1,5 @@
 # Patch for Ocrad 0.24 to enable build of shared library and fix tests run for it
-# Copyright (C) 2010-2014 Georgi D. Sotirov <gdsotirov@dir.bg>
+# Copyright (C) 2010-2015 Georgi D. Sotirov <gdsotirov@dir.bg>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -15,10 +15,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-diff -urNad ocrad-0.24-orig/Makefile.in ocrad-0.24/Makefile.in
---- ocrad-0.24-orig/Makefile.in	2014-09-15 00:42:32.000000000 +0300
-+++ ocrad-0.24/Makefile.in	2014-10-18 17:51:20.000000000 +0300
-@@ -13,23 +13,23 @@
+diff -urNad ocrad-0.25-orig/Makefile.in ocrad-0.25/Makefile.in
+--- ocrad-0.25-orig/Makefile.in	2014-12-13 21:53:41.000000000 +0200
++++ ocrad-0.25/Makefile.in	2015-04-18 22:21:43.000000000 +0300
+@@ -13,7 +13,7 @@
             bitmap.o blob.o profile.o feats.o feats_test0.o feats_test1.o \
             character.o character_r11.o character_r12.o character_r13.o \
             textline.o textline_r2.o textblock.o textpage.o
@@ -26,17 +26,18 @@ diff -urNad ocrad-0.24-orig/Makefile.in ocrad-0.24/Makefile.in
 +prg_objs = arg_parser.o main.o
  
  
- .PHONY : all install install-bin install-info install-man install-strip \
+ .PHONY : all install install-bin install-info install-man \
+@@ -22,16 +22,16 @@
           uninstall uninstall-bin uninstall-info uninstall-man \
           doc info man check dist clean distclean
  
 -all : $(progname) lib$(libname).a
-+all : lib$(libname).so $(progname)
++all : $(progname) lib$(libname).so
  
 -lib$(libname).a: $(ocr_objs) $(lib_objs)
 -	$(AR) -rcs $@ $(ocr_objs) $(lib_objs)
 +lib$(libname).so: $(ocr_objs) $(lib_objs)
-+	$(CXX) -shared -Wl,-soname,lib$(libname).so -o lib$(libname).so $(ocr_objs) $(lib_objs)
++	$(CXX) -shared -Wl,-soname,$@ -o $@ $(ocr_objs) $(lib_objs)
  
 -$(progname) : $(ocr_objs) $(objs)
 -	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(ocr_objs) $(objs)
@@ -50,7 +51,7 @@ diff -urNad ocrad-0.24-orig/Makefile.in ocrad-0.24/Makefile.in
  
  ocradcheck.o : ocradcheck.cc
  	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -DPROGVERSION=\"$(pkgversion)\" -c -o $@ $<
-@@ -38,11 +38,11 @@
+@@ -40,11 +40,11 @@
  	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -DPROGVERSION=\"$(pkgversion)\" -c -o $@ $<
  
  %.o : %.cc
@@ -61,10 +62,10 @@ diff -urNad ocrad-0.24-orig/Makefile.in ocrad-0.24/Makefile.in
  $(ocr_objs)     : Makefile bitmap.h blob.h common.h rectangle.h ucs.h
 -$(objs)         : Makefile arg_parser.h
 +$(prg_objs)     : Makefile arg_parser.h
- character.o     : segment.h character.h profile.h feats.h
+ character.o     : segment.h user_filter.h character.h profile.h feats.h
  character_r11.o : segment.h character.h profile.h feats.h
  character_r12.o : segment.h character.h profile.h feats.h
-@@ -82,7 +82,7 @@
+@@ -87,7 +87,7 @@
  	./config.status
  
  check : all ocradcheck
@@ -72,17 +73,17 @@ diff -urNad ocrad-0.24-orig/Makefile.in ocrad-0.24/Makefile.in
 +	$(VPATH)/testsuite/check.sh $(VPATH)/testsuite $(pkgversion)
  
  install : install-bin install-info install-man
- 
-@@ -92,7 +92,7 @@
+ install-strip : install-bin-strip install-info install-man
+@@ -100,7 +100,7 @@
  	if [ ! -d "$(DESTDIR)$(libdir)" ] ; then $(INSTALL_DIR) "$(DESTDIR)$(libdir)" ; fi
  	$(INSTALL_PROGRAM) ./$(progname) "$(DESTDIR)$(bindir)/$(progname)"
  	$(INSTALL_DATA) $(VPATH)/$(libname)lib.h "$(DESTDIR)$(includedir)/$(libname)lib.h"
 -	$(INSTALL_DATA) ./lib$(libname).a "$(DESTDIR)$(libdir)/lib$(libname).a"
 +	$(INSTALL_DATA) ./lib$(libname).so "$(DESTDIR)$(libdir)/lib$(libname).so"
  
- install-info :
- 	if [ ! -d "$(DESTDIR)$(infodir)" ] ; then $(INSTALL_DIR) "$(DESTDIR)$(infodir)" ; fi
-@@ -111,7 +111,7 @@
+ install-bin-strip : all
+ 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install-bin
+@@ -127,7 +127,7 @@
  uninstall-bin :
  	-rm -f "$(DESTDIR)$(bindir)/$(progname)"
  	-rm -f "$(DESTDIR)$(includedir)/$(libname)lib.h"
@@ -91,7 +92,7 @@ diff -urNad ocrad-0.24-orig/Makefile.in ocrad-0.24/Makefile.in
  
  uninstall-info :
  	-install-info --info-dir="$(DESTDIR)$(infodir)" --remove "$(DESTDIR)$(infodir)/$(pkgname).info"
-@@ -146,7 +146,7 @@
+@@ -163,7 +163,7 @@
  
  clean :
  	-rm -f $(progname) $(objs)
@@ -100,9 +101,9 @@ diff -urNad ocrad-0.24-orig/Makefile.in ocrad-0.24/Makefile.in
  
  distclean : clean
  	-rm -f Makefile config.status *.tar *.tar.lz
-diff -urNad ocrad-0.24-orig/testsuite/check.sh ocrad-0.24/testsuite/check.sh
---- ocrad-0.24-orig/testsuite/check.sh	2014-08-24 19:36:14.000000000 +0300
-+++ ocrad-0.24/testsuite/check.sh	2014-10-18 17:46:23.000000000 +0300
+diff -urNad ocrad-0.25-orig/testsuite/check.sh ocrad-0.25/testsuite/check.sh
+--- ocrad-0.25-orig/testsuite/check.sh	2014-12-14 15:38:56.000000000 +0200
++++ ocrad-0.25/testsuite/check.sh	2015-04-18 22:01:52.000000000 +0300
 @@ -5,8 +5,8 @@
  # This script is free software: you have unlimited permission
  # to copy, distribute and modify it.
