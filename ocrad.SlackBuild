@@ -19,10 +19,10 @@
 #
 # Visit SlackPack at http://sotirov-bg.net/slackpack/
 #
-# $Id: ocrad.SlackBuild,v 1.6 2011/01/14 07:41:56 gsotirov Exp $
+# $Id: ocrad.SlackBuild,v 1.6.2.1 2019/01/16 19:08:48 gsotirov Exp $
 #
 
-. ../slack-package.conf
+. ../../slack-package.conf
 
 NAME=ocrad
 VERSION=0.21
